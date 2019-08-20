@@ -1,0 +1,30 @@
+[package]
+name = "sr25519-embedded-c"
+authors = ["chester"]
+edition = "2018"
+readme = "README.md"
+version = "0.0.1"
+
+[lib]
+name = "sr"
+path = "src/lib.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+cortex-m = "0.6.0"
+cortex-m-rt = "0.6.8"
+cortex-m-semihosting = "0.3.3"
+alloc-cortex-m = "0.3.5"
+# schnorrkel = {path="../schnorrkel", default-features = false}
+schnorrkel = {version="0.8.5", default-features = false}
+rand_chacha = {version="0.1",default-features = false,optional = true}
+rand_core = {version = "0.4.2",default-features = false}
+
+[profile.release]
+codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size on Flash
+lto = true # better optimizations
+opt-level = 3
+
+[features]
+u32_embedded = ["schnorrkel/u32_backend"]
