@@ -1,8 +1,5 @@
-# Build sr25519 for CortexMx
+# Run sr25519 on QEMU
 
-## Embedded
-
-Schnorrkel may be used in embedded system such as hardware wallet or HSM. To build the rust code to a static library and then link with other code which is commonly C seems a good way to go. And as far as we know, the embedded may have hardware random source so it is not necessary to generate it which bring std depending issues for embedded compile in this crate. So we bring the ```ext_rng``` features for the embedded compile as well we project based on QEMU  to test it.
 
 ## Set the toolchain
 
@@ -36,9 +33,6 @@ thumbv7em-none-eabi //for the Cortex-M4 and Cortex-M7 processors
 thumbv7em-none-eabihf //for the Cortex-M4F and Cortex-M7F processors
 ```
 
-### Before build
-
-Please do close the 'lib' sections in toml file of schnorrkel so we can make it crate. And close the default feature in 'features' which is confused me because we have use embedded feature from this crate.
 
 ### Config, build and run
 
@@ -78,34 +72,9 @@ C is widely used language for embedded. So, we should find a way to let RUST cod
 
 ### compile
 
-To compile the static lib, you should:
-open the 'lib' section in schnorrkel's toml
-
-```toml
-[lib]
-name = "sr"
-path = "src/lib.rs"
-crate-type = ["staticlib"]
-```
-
-and close [dev-dependencies]
-
-```toml
-# [dev-dependencies]
-# hex = "^0.3"
-# sha2 = "^0.8"
-# bincode = "^0.9"
-# criterion = "0.2"
-```
-
-Then use  
-
 ```shell
 cargo build --release --target thumbv7m-none-eabi --no-default-features --features "embedded"
 ```
 
 to compile it. Now we have the libsr.a in target folder. You could copy it to your project directory. Please note that you MUST choose arm-gcc to link it as the first step because ARMCC may generate some errors.
 
-### C wrapper
-
-wrapper.rs adds a layer which could access by C. Note that libc could not be used for cortex so that we just use the basic types in RUST. To return to C return, a struct called sr_data is defined and boxed in heap. We simply return all data in this struct to avoid more type issues. The heap must be init by sr_init and a global var must be defined in C to give the start address of your heap.
