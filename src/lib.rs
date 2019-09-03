@@ -7,12 +7,11 @@
 #![feature(lang_items)]
 
 extern crate alloc;
-extern crate alloc_cortex_m;
 extern crate rand_core;
 extern crate schnorrkel;
 
 pub mod wrapper;
-
+pub mod exrng;
 
 
 use schnorrkel::keys::*; // {MiniSecretKey,SecretKey,PublicKey,Keypair}; + *_LENGTH
@@ -23,6 +22,7 @@ use schnorrkel::derive::{ExtendedKey,ChainCode,CHAIN_CODE_LENGTH};
 use core::panic::PanicInfo;
 use rand_core::{CryptoRng, RngCore, SeedableRng, Error, le};
 
- use alloc_cortex_m::CortexMHeap;
- #[global_allocator]
- pub static ALLOCATOR: CortexMHeap = CortexMHeap::empty();
+
+//  use alloc_cortex_m::CortexMHeap;
+//  #[global_allocator]
+//  pub static ALLOCATOR: CortexMHeap = CortexMHeap::empty();

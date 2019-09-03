@@ -34,6 +34,39 @@ use schnorrkel::errors::{SignatureError,SignatureResult};
 use schnorrkel::derive::{ExtendedKey,ChainCode,CHAIN_CODE_LENGTH};
 
 
+pub struct ExternalRng
+{
+        pub rng_bytes: [u8;32],
+        pub len: usize
+}
+impl ExternalRng
+{
+    pub fn set_rng(&self, dest: &mut [u8])
+    {
+        let mut k = 0;
+        while k<self.len
+        {
+            dest[k] = self.rng_bytes[k];
+            k= k+1;
+        }
+    }
+}
+
+impl RngCore for ExternalRng {
+    fn next_u32(&mut self) -> u32 {  panic!()  }
+    fn next_u64(&mut self) -> u64 {  panic!()  }
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        self.set_rng(dest); 
+    }
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), ::rand_core::Error> {
+        self.fill_bytes(dest);
+        Ok(())
+    }
+}
+impl CryptoRng for ExternalRng {}
+
+
+
 fn test_derive(kp:&[u8;96])->bool{
     let key = Keypair::from_bytes(&kp[..]).unwrap();
     let chaincode = ChainCode([0u8; CHAIN_CODE_LENGTH]);
@@ -52,25 +85,16 @@ fn test_sign_verify(kp:&[u8;96])->bool{
 	let message_bytes: [u8;32] = [0u8;32];
 	let trng_bytes: [u8;32] = [0u8;32];
 
-	//let signature: Signature = keypair.sign(context.bytes(&message_bytes[..]));
-    struct ZeroFakeRng;
-    impl RngCore for ZeroFakeRng {
-        fn next_u32(&mut self) -> u32 {  panic!()  }
-        fn next_u64(&mut self) -> u64 {  panic!()  }
-        fn fill_bytes(&mut self, dest: &mut [u8]) {
-            for i in dest.iter_mut() {  *i = 0;  }
-        }
-        fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), ::rand_core::Error> {
-            self.fill_bytes(dest);
-            Ok(())
-        }
-    }
-    impl CryptoRng for ZeroFakeRng {}
-
-    let signature: Signature = keypair.sign(attach_rng(context.bytes(&message_bytes[..]), ZeroFakeRng));
+    	let signature: Signature = keypair.sign(
+        attach_rng(
+            context.bytes(&message_bytes[..]), 
+            ExternalRng{
+                rng_bytes:trng_bytes,
+                len:32}
+                ));
     
 	let signature_bytes = signature.to_bytes();
-    //hprintln!("sign result{:#?}",&signature_bytes[..]).unwrap();
+    hprintln!("sign result{:#?}",&signature_bytes[..]).unwrap();
 
     if keypair
 		.verify(context.bytes(&message_bytes), &signature)
@@ -85,11 +109,11 @@ fn test_sign_verify(kp:&[u8;96])->bool{
 fn test_kp_from_seed(seed:&[u8;32])->[u8;96]{
     let msk = MiniSecretKey::from_bytes(seed).unwrap();
 	let msk_bytes = msk.to_bytes();
-    //hprintln!("msk{:#?}",&msk_bytes[..]).unwrap();
+    hprintln!("msk{:#?}",&msk_bytes[..]).unwrap();
 
     let kp = msk.expand_to_keypair(ExpansionMode::Uniform);
     let kp_bytes = kp.to_bytes();
-    //hprintln!("kp_bytes{:#?}",&kp_bytes[..]).unwrap();
+    hprintln!("kp_bytes{:#?}",&kp_bytes[..]).unwrap();
 
     kp_bytes
 }
@@ -108,8 +132,8 @@ fn main() -> ! {
 
     let kp = test_kp_from_seed(&seed);
     let rv = test_sign_verify(&kp);
-    let rv2 = test_derive(&kp);
-    //hprintln!("verify result {:#?}",rv).unwrap();
+  //  let rv2 = test_derive(&kp);
+    hprintln!("verify result {:#?}",rv).unwrap();
 
     debug::exit(debug::EXIT_SUCCESS);
     loop {
