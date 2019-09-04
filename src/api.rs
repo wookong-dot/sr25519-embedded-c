@@ -22,7 +22,7 @@ pub const SR_OK:u32 = 0;
 pub const SR_FAIL:u32 = 1;
 pub const SR_PAIR_FAIL:u32 = 2;
 pub const SR_VERIFY_FAIL:u32 = 3;
-pub const SR_SIGN_FORMET:u32 = 4;
+pub const SR_SIGN_FORMAT:u32 = 4;
 
 #[no_mangle]
 pub unsafe extern "C" fn sr_derive_keypair_hard(
@@ -49,7 +49,7 @@ pub unsafe extern "C" fn sr_sign(
 	keypair: *const u8,
     sig_out: *mut u8,
 ) -> u32 {
-	let context = signing_context(b"good");
+	let context = signing_context(b"substrate");
 	let keypair =
 		match Keypair::from_bytes(slice::from_raw_parts(keypair, SR_PUBLIC_LEN + SR_SECRET_LEN)) {
 			Ok(pair) => pair,
@@ -83,7 +83,7 @@ pub unsafe extern "C" fn sr_verify(
     let message = slice::from_raw_parts(message_ptr, message_length as usize);
     let signature = match Signature::from_bytes(signature) {
         Ok(signature) => signature,
-        Err(_) => return SR_SIGN_FORMET,
+        Err(_) => return SR_SIGN_FORMAT,
     };
     if create_public(public).verify_simple(SIGNING_CTX, message, &signature).is_ok()
         { SR_OK }
