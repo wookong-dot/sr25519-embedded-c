@@ -19,6 +19,7 @@ extern crate alloc;
 extern crate alloc_cortex_m;
 extern crate rand_core;
 
+
 // pick a panicking behavior
 extern crate panic_halt; // you can put a breakpoint on `rust_begin_unwind` to catch panics
 use core::slice;

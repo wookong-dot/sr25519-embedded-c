@@ -15,6 +15,7 @@ schnorrkel = {version="0.8.5", default-features = false}
 rand_chacha = {version="0.1",default-features = false,optional = true}
 rand_core = {version = "0.4.2",default-features = false}
 
+
 [profile.release]
 codegen-units = 1 # better optimizations
 debug = true # symbols are nice and they don't increase the size on Flash
