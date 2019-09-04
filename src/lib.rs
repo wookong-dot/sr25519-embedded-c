@@ -8,4 +8,5 @@ extern crate schnorrkel;
 extern crate exrng;
 
 pub mod api;
+pub mod device;
 

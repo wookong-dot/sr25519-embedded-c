@@ -89,3 +89,29 @@ pub unsafe extern "C" fn sr_keypair_from_seed(keypair_out: *mut u8, seed_ptr: *c
     ptr::copy(kp_bytes.as_ptr(), keypair_out, SR_KEYPAIR_LEN as usize);
     { SR_OK }
 }
+
+#[cfg(test)]
+mod test{
+use super::*;
+#[test]
+fn test_sign_verify(){
+    let mut keypair_out:[u8;96] = [0u8;96];
+    let seed:[u8;32] = [0u8;32];
+    let mut rv = unsafe { sr_keypair_from_seed(keypair_out.as_mut_ptr(),seed.as_ptr()) };
+    assert_eq!(rv,0 );
+	let message_bytes: [u8;32] = [0u8;32];
+	let rng_bytes: [u8;32] = [0u8;32];
+    let mut sign_out:[u8;64] = [0u8;64];
+    rv = unsafe {sr_sign(
+                        message_bytes.as_ptr(),
+                        32,
+                        rng_bytes.as_ptr(),
+                        keypair_out.as_ptr(),
+                        sign_out.as_mut_ptr()
+                ) };
+    assert_eq!(rv,0 );
+    let brv = unsafe {sr_verify(sign_out.as_ptr(),message_bytes.as_ptr(),32,keypair_out[64..].as_ptr())};
+    assert_eq!(brv,true);
+
+    }
+}
