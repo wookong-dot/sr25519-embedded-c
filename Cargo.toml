@@ -1,14 +1,21 @@
 [package]
 name = "sr25519-embedded-c"
-authors = ["chester"]
+authors = ["chester <chester@pixelauth.com>"]
 edition = "2018"
 readme = "README.md"
-version = "0.0.1"
+version = "0.1.0"
+license = "MIT/Apache-2.0"
+repository = "https://github.com/wookong-dot/sr25519-embedded-c.git"
+documentation = "https://docs.rs/sr25519-embedded-c"
+keywords = ["schnorrkel", "Rng-free", "embedded", "arm", "none-os"]
+categories = ["algorithms", "no-std"]
+description = "C bindings of sr25519 for embedded device"
+exclude = [ ".gitignore", "TESTVECTORS", "res/*" ]
 
-[lib]
-name = "sr"
-path = "src/lib.rs"
-crate-type = ["staticlib"]
+# [lib]
+# name = "sr"
+# path = "src/lib.rs"
+# crate-type = ["staticlib"]
 
 [dependencies]
 schnorrkel = {version="0.8.5", default-features = false}

@@ -1,3 +1,14 @@
+// -*- mode: rust; -*-
+//
+// This file is part of sr25519-embedded-c.
+// Copyright (c) 2017-2019 Chester Li and extropies.com
+// See LICENSE for licensing information.
+//
+// Authors:
+// - Chester Li<chester@lichester.com>
+
+//! Bindings APIs for calling by C language
+
 use core::slice;
 use core::ptr;
 use schnorrkel::{
@@ -6,24 +17,35 @@ use schnorrkel::{
     Signature, ExpansionMode};
 use exrng::ExternalRng;
 
-
+/// seed len 32
 pub const SR_SEED_LEN: usize = 32;
+/// chain code len 32
 pub const SR_CHAINCODE_LEN: usize = 32;
+/// public key len 32
 pub const SR_PUBLIC_LEN: usize = 32;
+/// private key len
 pub const SR_SECRET_LEN: usize = 64;
+/// signature len 64
 pub const SR_SIGNATURE_LEN: usize = 64;
+/// keypair len 96 
 pub const SR_KEYPAIR_LEN: usize = 96;
-pub const SR_VRF_OUTPUT_LEN: usize = 32;
-pub const SR_VRF_PROOF_LEN: usize = 64;
 
+/// ok
 pub const SR_OK:u32 = 0;
+/// general fail
 pub const SR_FAIL:u32 = 1;
+/// pair format error
 pub const SR_PAIR_FAIL:u32 = 2;
+/// verify fail
 pub const SR_VERIFY_FAIL:u32 = 3;
+/// sign format error
 pub const SR_SIGN_FORMAT:u32 = 4;
 
+/// context
 pub const SIGNING_CTX: &'static [u8] = b"substrate";
 
+/// Sign function
+/// external rng in random
 #[no_mangle]
 pub unsafe extern "C" fn sr_sign(
 	message: *const u8,
@@ -53,7 +75,7 @@ pub unsafe extern "C" fn sr_sign(
     { SR_OK }
 }
 
-
+/// signature verify function
 #[no_mangle]
 pub unsafe extern "C" fn sr_verify(
     signature_ptr: *const u8,
@@ -76,7 +98,7 @@ pub unsafe extern "C" fn sr_verify(
     pk.verify_simple(SIGNING_CTX, message, &signature).is_ok()
 
 }
-
+/// get key pair from seed
 #[no_mangle]
 pub unsafe extern "C" fn sr_keypair_from_seed(keypair_out: *mut u8, seed_ptr: *const u8)->u32 {
     let seed = slice::from_raw_parts(seed_ptr, SR_SEED_LEN as usize);
@@ -93,7 +115,9 @@ pub unsafe extern "C" fn sr_keypair_from_seed(keypair_out: *mut u8, seed_ptr: *c
 #[cfg(test)]
 mod test{
 use super::*;
+
 #[test]
+
 fn test_sign_verify(){
     let mut keypair_out:[u8;96] = [0u8;96];
     let seed:[u8;32] = [0u8;32];
