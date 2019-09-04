@@ -7,6 +7,5 @@ extern crate rand_core;
 extern crate schnorrkel;
 extern crate exrng;
 
-pub mod wrapper;
 pub mod api;
 

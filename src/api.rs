@@ -1,11 +1,9 @@
 use core::slice;
-use crate::wrapper::{create_from_pair,create_cc,create_public,SIGNING_CTX,create_from_seed};
 use core::ptr;
 use schnorrkel::{
-    context::signing_context,
-    derive::{CHAIN_CODE_LENGTH, ChainCode, Derivation}, Keypair, MiniSecretKey, PublicKey, SecretKey,
-    Signature, SignatureError, vrf::{VRFOutput, VRFProof}, ExpansionMode,context::attach_rng};
-use rand_core::{CryptoRng, RngCore};
+    context::{signing_context,attach_rng},
+    Keypair, MiniSecretKey, PublicKey,
+    Signature, ExpansionMode};
 use exrng::ExternalRng;
 
 
@@ -24,22 +22,7 @@ pub const SR_PAIR_FAIL:u32 = 2;
 pub const SR_VERIFY_FAIL:u32 = 3;
 pub const SR_SIGN_FORMAT:u32 = 4;
 
-#[no_mangle]
-pub unsafe extern "C" fn sr_derive_keypair_hard(
-    keypair_out: *mut u8,
-    pair_ptr: *const u8,
-    cc_ptr: *const u8,
-) {
-    let pair = slice::from_raw_parts(pair_ptr, SR_KEYPAIR_LEN as usize);
-    let cc = slice::from_raw_parts(cc_ptr, SR_CHAINCODE_LEN as usize);
-    let kp = create_from_pair(pair)
-        .secret
-        .hard_derive_mini_secret_key(Some(create_cc(cc)), &[])
-        .0
-        .expand_to_keypair(ExpansionMode::Ed25519);
-
-    ptr::copy(kp.to_bytes().as_ptr(), keypair_out, SR_KEYPAIR_LEN as usize);
-}
+pub const SIGNING_CTX: &'static [u8] = b"substrate";
 
 #[no_mangle]
 pub unsafe extern "C" fn sr_sign(
@@ -70,31 +53,39 @@ pub unsafe extern "C" fn sr_sign(
     { SR_OK }
 }
 
-#[allow(unused_attributes)]
+
 #[no_mangle]
 pub unsafe extern "C" fn sr_verify(
     signature_ptr: *const u8,
     message_ptr: *const u8,
     message_length: usize,
     public_ptr: *const u8,
-) -> u32 {
+) -> bool {
     let public = slice::from_raw_parts(public_ptr, SR_PUBLIC_LEN as usize);
     let signature = slice::from_raw_parts(signature_ptr, SR_SIGNATURE_LEN as usize);
     let message = slice::from_raw_parts(message_ptr, message_length as usize);
     let signature = match Signature::from_bytes(signature) {
         Ok(signature) => signature,
-        Err(_) => return SR_SIGN_FORMAT,
+        Err(_) => return false,
     };
-    if create_public(public).verify_simple(SIGNING_CTX, message, &signature).is_ok()
-        { SR_OK }
-    else
-        { SR_VERIFY_FAIL }
+
+    let pk =  match PublicKey::from_bytes(public) {
+        Ok(public) => public,
+        Err(_) => return false,
+    };
+    pk.verify_simple(SIGNING_CTX, message, &signature).is_ok()
+
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn sr_keypair_from_seed(keypair_out: *mut u8, seed_ptr: *const u8)->u32 {
     let seed = slice::from_raw_parts(seed_ptr, SR_SEED_LEN as usize);
-    let kp = create_from_seed(seed);
-    ptr::copy(kp.to_bytes().as_ptr(), keypair_out, SR_KEYPAIR_LEN as usize);
+    let msk = match MiniSecretKey::from_bytes(seed){
+         Ok(mk) => mk,
+         Err(_) => return SR_SIGN_FORMAT,
+    };
+    let kp = msk.expand_to_keypair(ExpansionMode::Ed25519);
+    let kp_bytes = kp.to_bytes();
+    ptr::copy(kp_bytes.as_ptr(), keypair_out, SR_KEYPAIR_LEN as usize);
     { SR_OK }
 }
