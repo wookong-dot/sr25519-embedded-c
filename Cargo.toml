@@ -12,14 +12,14 @@ categories = ["algorithms", "no-std"]
 description = "C bindings of sr25519 for embedded device"
 exclude = [ ".gitignore", "TESTVECTORS", "res/*" ]
 
-# [lib]
-# name = "sr"
-# path = "src/lib.rs"
-# crate-type = ["staticlib"]
+[lib]
+name = "sr"
+path = "src/lib.rs"
+crate-type = ["staticlib"]
 
 [dependencies]
 schnorrkel = {version="0.8.5", default-features = false}
-rand_core = {version = "0.4.2"}
+rand_core = {version = "0.1.0"}
 exrng = {version = "0.1.2"}
 
 [profile.release]

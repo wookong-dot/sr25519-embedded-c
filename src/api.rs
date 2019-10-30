@@ -14,7 +14,8 @@ use core::ptr;
 use schnorrkel::{
     context::{signing_context,attach_rng},
     Keypair, MiniSecretKey, PublicKey,
-    Signature, ExpansionMode};
+    Signature, ExpansionMode,
+    derive::{Derivation, ChainCode, CHAIN_CODE_LENGTH}};
 use exrng::ExternalRng;
 
 /// seed len 32
@@ -43,6 +44,14 @@ pub const SR_SIGN_FORMAT:u32 = 4;
 
 /// context
 pub const SIGNING_CTX: &'static [u8] = b"substrate";
+
+fn create_cc(data: &[u8]) -> ChainCode {
+	let mut cc = [0u8; CHAIN_CODE_LENGTH];
+
+	cc.copy_from_slice(&data);
+
+	ChainCode(cc)
+}
 
 /// Sign function
 /// external rng in random
@@ -112,12 +121,38 @@ pub unsafe extern "C" fn sr_keypair_from_seed(keypair_out: *mut u8, seed_ptr: *c
     { SR_OK }
 }
 
+/// get key pair from seed
+#[no_mangle]
+pub unsafe extern "C" fn sr_derive(keypair_ptr: *mut u8, path: *const u8, cc: *const u8, is_hard: bool, _is_ksm: bool)->u32{
+	let keypair =
+		match Keypair::from_bytes(slice::from_raw_parts(keypair_ptr, SR_PUBLIC_LEN + SR_SECRET_LEN)) {
+			Ok(pair) => pair,
+			Err(_) => {
+				return {SR_PAIR_FAIL};
+			}
+		};
+    let mut cc = slice::from_raw_parts(cc, SR_SEED_LEN as usize);
+    let mut path = slice::from_raw_parts(path, SR_SEED_LEN as usize);
+    // let empty = &[];
+    // let zero:[u8;32] = [0u8;32];
+    // if is_ksm{
+    //     cc = &zero;
+    //     path = &zero;
+    // }
+    if is_hard{
+        let key = keypair.hard_derive_mini_secret_key(Some(create_cc(cc)), path).0.expand_to_keypair(ExpansionMode::Ed25519);
+        ptr::copy(key.to_bytes().as_ptr(), keypair_ptr, SR_KEYPAIR_LEN as usize);
+    }else{
+        let key = keypair.derived_key_simple(create_cc(cc), path).0;
+        ptr::copy(key.to_bytes().as_ptr(), keypair_ptr, SR_KEYPAIR_LEN as usize);
+    }
+    { SR_OK }
+}
 #[cfg(test)]
 mod test{
 use super::*;
 
 #[test]
-
 fn test_sign_verify(){
     let mut keypair_out:[u8;96] = [0u8;96];
     let seed:[u8;32] = [0u8;32];
@@ -138,4 +173,16 @@ fn test_sign_verify(){
     assert_eq!(brv,true);
 
     }
+#[test]
+fn test_derive(){
+    let mut keypair_out:[u8;96] = [0u8;96];
+    let seed:[u8;32] = [0u8;32];
+    let rv = unsafe { sr_keypair_from_seed(keypair_out.as_mut_ptr(),seed.as_ptr()) };
+    assert_eq!(rv,0 );
+    let path_ksm:[u8;32] = [0u8;32];
+    let cc_ksm:[u8;32] = [0u8;32];
+    //test ksm
+    let ksm_rv = unsafe { sr_derive(keypair_out.as_mut_ptr(), path_ksm.as_ptr(), cc_ksm.as_ptr(), false, false) };
+    assert_eq!(ksm_rv,0);
+}
 }
